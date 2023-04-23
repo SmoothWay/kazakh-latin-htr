@@ -1,0 +1,57 @@
+<!doctype html>
+    <html lang="en">
+    <body>
+
+    <div class="container">
+        <div class="row">
+            <div class="col">
+                <h1 class="mt-5">Распознавание рукописных текстов казахского языка на латинице</h1>
+                <hr>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col">
+                <h4 class="mt-5">Загрузить изображение</h4>
+                <form>
+                    <label for="file">Изображение:</label>
+                    <input type="file" id="fileInput" name="image"><br><br>
+                    <button type="button" onclick="predict()">Распознать</button>
+                </form>
+            </div>
+            <div class="col">
+                <h4 class="mt-5">Распознано</h4>
+                <div class="mt-1" style="outline: 1px solid silver; padding: 2em;">
+                    <pre id="received"><span class="text-muted">Nothing received yet...</span></pre>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+     function predict() {
+            var fileInput = document.getElementById("fileInput");
+            var file = fileInput.files[0];
+
+            // Create a new HTTP request
+            var xhr = new XMLHttpRequest();
+            xhr.open("POST", "/predict", true);
+
+            // Set the content type to multipart/form-data
+            // Create a new form data object
+            var formData = new FormData();
+            formData.append("image", file);
+
+            // Send the form data to the Flask app
+            xhr.send(formData);
+
+            // Handle the response from the Flask app
+            xhr.onreadystatechange = function() {
+                if (xhr.readyState === 4 && xhr.status === 200) {
+                    var resultDiv = document.getElementById("received");
+                    resultDiv.innerHTML = xhr.responseText;
+                }
+            };
+        }
+    </script>
+  </body>
+    </html>
