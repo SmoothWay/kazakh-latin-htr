@@ -1,7 +1,6 @@
 <!doctype html>
     <html lang="en">
     <body>
-
     <div class="container">
         <div class="row">
             <div class="col">
@@ -13,6 +12,11 @@
             <div class="col">
                 <h4 class="mt-5">Загрузить изображение</h4>
                 <form>
+                <select id="rType">
+                    <option value="0">Буква</option>
+                    <option value="1">Слово</option>
+                    <option value="2">Текст</option>
+                </select>
                     <label for="file">Изображение:</label>
                     <input type="file" id="fileInput" name="image"><br><br>
                     <button type="button" onclick="predict()">Распознать</button>
@@ -21,7 +25,7 @@
             <div class="col">
                 <h4 class="mt-5">Распознано</h4>
                 <div class="mt-1" style="outline: 1px solid silver; padding: 2em;">
-                    <pre id="received"><span class="text-muted">Nothing received yet...</span></pre>
+                    <pre id="received"><span class="text-muted">Здесь будет результат...</span></pre>
                 </div>
             </div>
         </div>
@@ -30,8 +34,9 @@
     <script>
      function predict() {
             var fileInput = document.getElementById("fileInput");
+            var recogType = document.getElementById("rType").value;
             var file = fileInput.files[0];
-
+             
             // Create a new HTTP request
             var xhr = new XMLHttpRequest();
             xhr.open("POST", "/predict", true);
@@ -40,7 +45,7 @@
             // Create a new form data object
             var formData = new FormData();
             formData.append("image", file);
-
+            formData.append("rType", recogType)
             // Send the form data to the Flask app
             xhr.send(formData);
 

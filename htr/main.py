@@ -3,8 +3,11 @@ import numpy as np
 import cv2
 
 from dataloader_iam import Batch
-from model import Model, DecoderType
-from preprocessor import Preprocessor
+# from model import Model, DecoderType
+# from preprocessor import Preprocessor
+
+from pipeline import read_page, DetectorConfig
+from pipeline.reader import read
 
 from flask import Flask, request, render_template, make_response
 
@@ -30,47 +33,62 @@ def get_img_size(line_mode: bool = False) -> Tuple[int, int]:
     return 128, get_img_height()
 
 
-def infer(model: Model, img):
-    """Recognizes text in image provided by file path."""
-    # img = cv2.imread(fn_img, cv2.IMREAD_GRAYSCALE)
-    assert img is not None
+# def infer(model: Model, img):
+#     """Recognizes text in image provided by file path."""
+#     # img = cv2.imread(fn_img, cv2.IMREAD_GRAYSCALE)
+#     assert img is not None
 
-    preprocessor = Preprocessor(get_img_size(), dynamic_width=True, padding=16)
-    img = preprocessor.process_img(img)
+#     preprocessor = Preprocessor(get_img_size(), dynamic_width=True, padding=16)
+#     img = preprocessor.process_img(img)
 
-    batch = Batch([img], None, 1)
-    recognized, probability = model.infer_batch(batch, True)
-    print(f'Recognized: "{recognized[0]}"')
-    print(f'Probability: {probability[0]}')
-    return recognized[0]
+#     batch = Batch([img], None, 1)
+#     recognized, probability = model.infer_batch(batch, True)
+#     print(f'Recognized: "{recognized[0]}"')
+#     print(f'Probability: {probability[0]}')
+#     return recognized[0]
 
 
 app = Flask(__name__)
-decoder_mapping = {'bestpath': DecoderType.BestPath,
-                    'beamsearch': DecoderType.BeamSearch,
-                    'wordbeamsearch': DecoderType.WordBeamSearch}
-decoder_type = decoder_mapping['bestpath']
+# decoder_mapping = {'bestpath': DecoderType.BestPath,
+#                     'beamsearch': DecoderType.BeamSearch,
+#                     'wordbeamsearch': DecoderType.WordBeamSearch}
+# decoder_type = decoder_mapping['bestpath']
 
-model = Model(char_list_from_file(), decoder_type, must_restore=True)
+# model = Model(char_list_from_file(), decoder_type, must_restore=True)
 
 @app.route('/')
 def home():
     return render_template('home.html')
 
+# TODO add full page recognition (segmentate with WordDetectorNN) 
 @app.route('/predict', methods=['POST'])
 def predict():
     # Check if image in request
-    print(request.content_type)
     if 'image' not in request.files:
         return "No image file found", 400
     # Get the image from the request
     img = cv2.imdecode(np.frombuffer(request.files['image'].read(), np.uint8), cv2.IMREAD_GRAYSCALE)
+    rType =request.form.get('rType')
+    prediction = ''
+    if rType == "0":
+        print("Processing letter")
+        # Make predictions
+        prediction = read(img)
+    elif rType == "1":
 
-    print("Processing recognition")
-    # Make predictions
-    prediction = infer(model, img)
+        print("Processing word")
+        # Make predictions
+        prediction = read(img)
 
-    # Return the predicted text
+    elif rType == "2":
+        print("Processing text")
+        read_lines = read_page(img, DetectorConfig(height=1000))
+        for read_line in read_lines:
+            prediction = ' '.join(read_word.text for read_word in read_line)
+        # else:
+        
+            
+        # Return the predicted text
     return make_response(prediction)
 
 if __name__ == '__main__':
