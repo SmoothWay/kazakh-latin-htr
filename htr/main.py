@@ -7,18 +7,6 @@ from pipeline.reader import read
 
 from flask import Flask, request, render_template, make_response
 
-
-    
-def get_img_height() -> int:
-    """Fixed height for NN."""
-    return 32
-
-def get_img_size(line_mode: bool = False) -> Tuple[int, int]:
-    """Height is fixed for NN, width is set according to training mode (single words or text lines)."""
-    if line_mode:
-        return 256, get_img_height()
-    return 128, get_img_height()
-
 app = Flask(__name__)
 @app.route('/')
 def home():
@@ -50,8 +38,7 @@ def predict():
             prediction = ' '.join(read_word.text for read_word in read_line)
     else:
         return "Invalid recognition type", 400
-        
-            
+              
     # Return the predicted text
     return make_response(prediction)
 
