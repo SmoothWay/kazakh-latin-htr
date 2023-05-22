@@ -34,7 +34,7 @@ def predict():
         print("Processing text")
         read_lines = read_page(img, DetectorConfig(height=1000))
         for read_line in read_lines:
-            prediction += ' '.join(read_word.text for read_word in read_line)
+            prediction += ' '.join(read_word.text for read_word in read_line) + '\n'
     else:
         return "Invalid recognition type\n", 400
               
