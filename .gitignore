@@ -1,6 +1,4 @@
 __pycache__
-htr/model/*
-!htr/model/*.txt
 *.so
 *.pyc
 .idea/
