@@ -1,4 +1,3 @@
-from typing import Tuple, List
 import numpy as np
 import cv2
 
@@ -16,7 +15,7 @@ def home():
 def predict():
     # Check if image in request
     if 'image' not in request.files:
-        return "No image file found", 400
+        return "No image file found\n", 400
     # Get the image from the request
     img = cv2.imdecode(np.frombuffer(request.files['image'].read(), np.uint8), cv2.IMREAD_GRAYSCALE)
     rType =request.form.get('rType')
@@ -37,10 +36,10 @@ def predict():
         for read_line in read_lines:
             prediction = ' '.join(read_word.text for read_word in read_line)
     else:
-        return "Invalid recognition type", 400
+        return "Invalid recognition type\n", 400
               
     # Return the predicted text
-    return make_response(prediction)
+    return make_response(prediction+'\n')
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
