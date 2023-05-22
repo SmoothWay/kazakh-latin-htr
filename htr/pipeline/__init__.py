@@ -62,6 +62,6 @@ def read_page(img: np.ndarray,
         for word in line:
             text = read(word.img)
             # read_lines[-1].append(WordReadout(text, word.bbox * (1 / f)))
-            read_lines[-1].append(WordReadout(text, word.aabb))
+            read_lines[-1].append(WordReadout(text, None,word.aabb))
 
     return read_lines

@@ -43,7 +43,7 @@ class BBox:
 @dataclass
 class DetectorRes:
     img: np.ndarray
-    # bbox: BBox
+    bbox: BBox
     aabb: AABB
 
 def ceil32(val):
@@ -78,7 +78,7 @@ def detect_aabb(img: np.ndarray, height: int, enlarge: int) -> List[DetectorRes]
         if aabb.area() == 0:
             continue
         crop = img[aabb.ymin:aabb.ymax, aabb.xmin:aabb.xmax]
-        res.append(DetectorRes(crop, aabb))
+        res.append(DetectorRes(crop, None, aabb))
 
     return res
 
@@ -158,12 +158,12 @@ def _cluster_lines(detections: List[DetectorRes],
     dist_mat = np.ones((num_bboxes, num_bboxes))
     for i in range(num_bboxes):
         for j in range(i, num_bboxes):
-            a = detections[i].bbox
-            b = detections[j].bbox
-            if a.y > b.y + b.h or b.y > a.y + a.h:
+            a = detections[i].aabb
+            b = detections[j].aabb
+            if a.ymin > b.ymax or b.ymin > a.ymax:
                 continue
-            intersection = min(a.y + a.h, b.y + b.h) - max(a.y, b.y)
-            union = a.h + b.h - intersection
+            intersection = min(a.ymax, b.ymax) - max(a.ymin, b.ymin)
+            union = a.height + b.height - intersection
             iou = np.clip(intersection / union if union > 0 else 0, 0, 1)
             dist_mat[i, j] = dist_mat[j, i] = 1 - iou  # Jaccard distance is defined as 1-iou
 
@@ -175,7 +175,7 @@ def _cluster_lines(detections: List[DetectorRes],
             continue
         clustered[cluster_id].append(detections[i])
 
-    res = sorted(clustered.values(), key=lambda line: [det.bbox.y + det.bbox.h / 2 for det in line])
+    res = sorted(clustered.values(), key=lambda line: [det.aabb.ymin + det.aabb.height / 2 for det in line])
     return res
 
 
@@ -199,4 +199,4 @@ def sort_multiline(detections: List[DetectorRes],
 
 def sort_line(detections: List[DetectorRes]) -> List[List[DetectorRes]]:
     """Sort the list of detections according to x-coordinates of word centers."""
-    return [sorted(detections, key=lambda det: det.bbox.x + det.bbox.w / 2)]
+    return [sorted(detections, key=lambda det: det.aabb.xmin + det.aabb.width / 2)]
