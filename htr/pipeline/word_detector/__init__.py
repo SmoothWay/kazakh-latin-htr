@@ -4,8 +4,26 @@ from typing import List, Tuple
 
 import cv2
 import numpy as np
-from sklearn.cluster import DBSCAN
+import onnxruntime as ort
 
+from path import Path
+
+from sklearn.cluster import DBSCAN
+from .aabb import AABB
+from .aabb_clustering import cluster_aabbs
+from .coding import decode, fg_by_cc
+
+def _load_model():
+    """Loads model and model metadata."""
+    file_path = Path(__file__).abspath().dirname() / 'stored_model'
+    ort_session = ort.InferenceSession(file_path / 'model.onnx',
+                                       providers=['CUDAExecutionProvider', 'CPUExecutionProvider'])
+
+    return ort_session
+
+
+# global vars holding the model and model metadata
+_ORT_SESSION = _load_model()
 
 @dataclass
 class BBox:
@@ -26,24 +44,49 @@ class BBox:
 class DetectorRes:
     img: np.ndarray
     bbox: BBox
+    aabb: AABB
 
+def ceil32(val):
+    if val % 32 == 0:
+        return val
+    val = (val // 32 + 1) * 32
+    return val
+
+def pad_image(img):
+    res = 255 * np.ones([ceil32(img.shape[0]), ceil32(img.shape[1])])
+    res[:img.shape[0], :img.shape[1]] = img
+    return res
+
+def detect_aabb(img: np.ndarray, height: int, enlarge: int) -> List[DetectorRes]:
+    f = height / img.shape[0]
+    img_resized = cv2.resize(img, None, fx=f, fy=f)
+    img_padded = pad_image(img_resized)
+    img_batch = img_padded.astype(np.float32)[None, None] / 255 - 0.5
+
+    outputs = _ORT_SESSION.run(None, {'input': img_batch})
+    pred_map = outputs[0][0]
+    aabbs = decode(pred_map, comp_fg=fg_by_cc(0.5, 100), f=img_batch.shape[2] / pred_map.shape[1])
+    aabbs = [aabb.scale(1 / f, 1 / f) for aabb in aabbs if aabb.scale(1 / f, 1 / f)]
+    h, w = img.shape
+    aabbs = [aabb.clip(AABB(0, w - 1, 0, h - 1)) for aabb in aabbs]  # bounding box must be inside img
+    clustered_aabbs = cluster_aabbs(aabbs)
+
+    res = []
+    for aabb in clustered_aabbs:
+        aabb = aabb.enlarge(enlarge)
+        aabb = aabb.as_type(int).clip(AABB(0, img.shape[1], 0, img.shape[0]))
+        if aabb.area() == 0:
+            continue
+        crop = img[aabb.ymin:aabb.ymax, aabb.xmin:aabb.xmax]
+        res.append(DetectorRes(crop, aabb))
+
+    return res
 
 def detect(img: np.ndarray,
            kernel_size: int,
            sigma: float,
            theta: float,
            min_area: int) -> List[DetectorRes]:
-    """Scale space technique for word segmentation proposed by R. Manmatha.
-    For details see paper http://ciir.cs.umass.edu/pubfiles/mm-27.pdf.
-    Args:
-        img: A grayscale uint8 image.
-        kernel_size: The size of the filter kernel, must be an odd integer.
-        sigma: Standard deviation of Gaussian function used for filter kernel.
-        theta: Approximated width/height ratio of words, filter function is distorted by this factor.
-        min_area: Ignore word candidates smaller than specified area.
-    Returns:
-        List of DetectorRes instances, each containing the bounding box and the word image.
-    """
     assert img.ndim == 2
     assert img.dtype == np.uint8
 
