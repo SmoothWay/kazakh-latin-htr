@@ -43,7 +43,7 @@ class BBox:
 @dataclass
 class DetectorRes:
     img: np.ndarray
-    bbox: BBox
+    # bbox: BBox
     aabb: AABB
 
 def ceil32(val):
