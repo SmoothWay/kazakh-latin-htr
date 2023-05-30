@@ -5,6 +5,7 @@ import numpy as np
 import cv2
 
 from .reader import read
+from .reader.ctc import PrefixTree
 from .word_detector import detect_aabb, detect, sort_multiline, prepare_img, BBox, AABB
 
 
@@ -30,16 +31,17 @@ class LineClusteringConfig:
     min_words_per_line: int = 1  # minimum number of words per line, if less, line gets discarded
     max_dist: float = 0.7  # threshold for clustering words into lines, value between 0 and 1
 
-# @dataclass
-# class ReaderConfig:
-#     """Configure how the detected words are read."""
-#     decoder: str = 'best_path'  # 'best_path' or 'word_beam_search'
-#     prefix_tree: Optional[PrefixTree] = None
+@dataclass
+class ReaderConfig:
+    """Configure how the detected words are read."""
+    decoder: str = 'best_path'  # 'best_path' or 'word_beam_search'
+    prefix_tree: Optional[PrefixTree] = None
 
 
 def read_page(img: np.ndarray,
               detector_config: DetectorConfig = DetectorConfig(1000),
-              line_clustering_config=LineClusteringConfig()) -> List[List[WordReadout]]:
+              line_clustering_config=LineClusteringConfig(),
+              reader_config=ReaderConfig()) -> List[List[WordReadout]]:
     # prepare image
     img, f = prepare_img(img, detector_config.height)
 

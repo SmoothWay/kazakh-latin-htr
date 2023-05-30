@@ -1,30 +1,45 @@
 <!doctype html>
     <html lang="en">
+    <head>
+    <title>Распознавание рукописных текстов</title>
+    <link rel="shortcut icon" type="image/jpg" href="templates/logo.svg"/>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    </head>
+
     <body>
     <div class="container">
         <div class="row">
             <div class="col">
-                <h1 class="mt-5">Распознавание рукописных текстов казахского языка на латинице</h1>
-                <hr>
+                <img id="logo" src="templates/logo.svg">
+
+                <h1 id="title" class="mt-5"> Распознавание рукописных текстов казахского языка на латинице</h1>
             </div>
         </div>
         <div class="row">
+
             <div class="col">
-                <h4 class="mt-5">Загрузить изображение</h4>
                 <form>
                 <select id="rType">
                     <option value="0">Буква</option>
                     <option value="1">Слово</option>
                     <option value="2">Текст</option>
                 </select>
-                    <label for="file">Изображение:</label>
-                    <input type="file" id="fileInput" name="image"><br><br>
-                    <button type="button" onclick="predict()">Распознать</button>
+    
+                    <div id="dropArea" class="mt-5" onclick="openFileSelection()">
+                        <label id="labelBrowse" for="fileInput">Выбрать</label>
+                        <input type="file" id="fileInput" name="image" style="display:none;">
+                        <p id="DropUploadFiles">Или перенести файл...</p>
+                    </div>
+                        <img id="preview" src="#" alt="Preview" onerror="this.style.display='none'"/>
+
+                    <button id="recognize" type="button" onchange="previewFile(event)" onclick="predict()" accept="image/*">
+                    <span id="rbtxt>">Распознать</span>
+                    </button>
+
                 </form>
             </div>
-            <div class="col">
-                <h4 class="mt-5">Распознано</h4>
-                <div class="mt-1" style="outline: 1px solid silver; padding: 2em;">
+            <div class="row">
+                <div class="mt-1">
                     <pre id="received"><span class="text-muted">Здесь будет результат...</span></pre>
                 </div>
             </div>
@@ -32,31 +47,74 @@
     </div>
 
     <script>
-     function predict() {
-            var fileInput = document.getElementById("fileInput");
-            var recogType = document.getElementById("rType").value;
-            var file = fileInput.files[0];
-             
-            // Create a new HTTP request
-            var xhr = new XMLHttpRequest();
-            xhr.open("POST", "/predict", true);
 
-            // Set the content type to multipart/form-data
-            // Create a new form data object
-            var formData = new FormData();
-            formData.append("image", file);
-            formData.append("rType", recogType)
-            // Send the form data to the Flask app
-            xhr.send(formData);
+    function predict() {
+        var fileInput = document.getElementById("fileInput");
+        var recogType = document.getElementById("rType").value;
+        var file = fileInput.files[0];
+            
+        // Create a new HTTP request
+        var xhr = new XMLHttpRequest();
+        xhr.open("POST", "/predict", true);
 
-            // Handle the response from the Flask app
-            xhr.onreadystatechange = function() {
-                if (xhr.readyState === 4 && xhr.status === 200) {
-                    var resultDiv = document.getElementById("received");
-                    resultDiv.innerHTML = xhr.responseText;
-                }
-            };
+        // Set the content type to multipart/form-data
+        var formData = new FormData();
+        formData.append("image", file);
+        formData.append("rType", recogType)
+
+        // Send the form data to the Flask app
+        xhr.send(formData);
+
+        // Handle the response from the Flask app
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState === 4 && xhr.status === 200) {
+                var resultDiv = document.getElementById("received");
+                resultDiv.innerHTML = xhr.responseText;
+            }
+        };
+    }
+
+    var dropArea = document.getElementById("dropArea");
+    var preview = document.getElementById("preview");
+    var fileInput = document.getElementById("fileInput");
+
+    // Prevent the default drag and drop behavior
+    dropArea.addEventListener("dragenter", preventDefaults, false);
+    dropArea.addEventListener("dragover", preventDefaults, false);
+    dropArea.addEventListener("dragleave", preventDefaults, false);
+    dropArea.addEventListener("drop", preventDefaults, false);
+    fileInput.addEventListener("change", function(event) {
+    var file = event.target.files[0];
+        previewFile(file);
+    });
+    // Handle the drag and drop events
+    dropArea.addEventListener("drop", handleDrop, false);
+
+    function preventDefaults(event) {
+
+        event.preventDefault();
+        event.stopPropagation();
         }
+
+    function handleDrop(event) {
+
+        var file = event.dataTransfer.files[0];
+        if (file) {
+            fileInput.files = event.dataTransfer.files;
+            previewFile(file);
+        }
+    }
+    function previewFile(file) {
+        preview.style.display = 'grid';
+        var reader = new FileReader();
+        reader.onload = function(event) {
+            preview.src = event.target.result;
+        };
+        reader.readAsDataURL(file);
+    }
+    function openFileSelection() {
+        document.getElementById("fileInput").click();
+    }
     </script>
   </body>
     </html>

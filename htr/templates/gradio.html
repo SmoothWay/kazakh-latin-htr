@@ -1,0 +1,53 @@
+<div id="dropArea">
+  <p>Drag and drop an image file here</p>
+</div>
+<img id="preview" src="#" alt="Preview Image">
+
+
+<script>
+var dropArea = document.getElementById("dropArea");
+var preview = document.getElementById("preview");
+
+// Prevent the default drag and drop behavior
+dropArea.addEventListener("dragenter", preventDefaults, false);
+dropArea.addEventListener("dragover", preventDefaults, false);
+dropArea.addEventListener("dragleave", preventDefaults, false);
+dropArea.addEventListener("drop", preventDefaults, false);
+
+// Handle the drag and drop events
+dropArea.addEventListener("drop", handleDrop, false);
+
+function preventDefaults(event) {
+  event.preventDefault();
+  event.stopPropagation();
+}
+
+function handleDrop(event) {
+  var file = event.dataTransfer.files[0];
+  
+  var reader = new FileReader();
+  reader.onload = function(event) {
+    preview.src = event.target.result;
+  };
+
+  if (file) {
+    reader.readAsDataURL(file);
+  }
+}
+</script>
+
+<style>
+#dropArea {
+  width: 300px;
+  height: 200px;
+  border: 2px dashed #ccc;
+  text-align: center;
+  padding: 20px;
+}
+
+#preview {
+  max-width: 100%;
+  max-height: 200px;
+  margin-top: 20px;
+}
+</style>

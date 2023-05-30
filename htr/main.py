@@ -6,7 +6,13 @@ from pipeline.reader import read
 
 from flask import Flask, request, render_template, make_response
 
-app = Flask(__name__)
+# with open('pipeline/reader/model/corpus.txt') as f:
+#     word_list = [w.strip().upper() for w in f.readlines()]
+# prefix_tree = PrefixTree(word_list)
+
+
+app = Flask(__name__, static_folder='templates')
+# CORS(app)
 @app.route('/')
 def home():
     return render_template('home.html')
@@ -23,7 +29,7 @@ def predict():
     if rType == "0":
         print("Processing letter")
         # Make predictions
-        prediction = read(img)
+        prediction = read(img)[:1]
     elif rType == "1":
 
         print("Processing word")
